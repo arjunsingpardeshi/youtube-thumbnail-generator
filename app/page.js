@@ -1,102 +1,120 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Play, Star, Sparkles, Download } from "lucide-react";
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-900 to-black text-white">
+      {/* Navbar */}
+      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-black/60 backdrop-blur sticky top-0 z-50">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl font-bold text-red-400">YTThumbs</span>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+        <nav className="hidden md:flex gap-6 text-gray-300 text-sm font-medium">
+          <a href="#features" className="hover:text-white">Features</a>
+          <a href="#templates" className="hover:text-white">Templates</a>
+          <a href="#testimonials" className="hover:text-white">Testimonials</a>
+          <a href="#pricing" className="hover:text-white">Pricing</a>
+        </nav>
+        <div className="flex gap-3">
+          <Link href="/login">
+            <Button variant="outline" className="border-white text-white">Login</Button>
+          </Link>
+          <Link href="/login">
+            <Button className="bg-red-400 hover:bg-red-700">Sign Up</Button>
+          </Link>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="flex flex-col items-center justify-center text-center py-20 px-4">
+        <h1 className="text-4xl md:text-6xl font-bold mb-4">
+          Create Stunning YouTube Thumbnails in Minutes
+        </h1>
+        <p className="text-lg md:text-xl text-gray-300 max-w-2xl mb-6">
+          No design skills needed. Pick a template, customize, and download instantly.
+        </p>
+        <div className="flex gap-4">
+          <Link href="/login">
+            <Button className="bg-red-400 hover:bg-red-700 text-lg px-6 py-3">
+              Start Creating
+            </Button>
+          </Link>
+          <Button variant="outline" className="border-white text-white text-lg px-6 py-3">
+            Try Demo
+          </Button>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="py-16 px-6 grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
+        {[
+          { icon: Sparkles, title: "Ready Templates", desc: "Choose from 100+ pre-designed thumbnails." },
+          { icon: Play, title: "Drag & Drop", desc: "Customize easily with our simple editor." },
+          { icon: Star, title: "Custom Fonts", desc: "Use your own fonts, colors, and branding." },
+          { icon: Download, title: "Instant Download", desc: "Export high-quality thumbnails instantly." },
+        ].map((feature, i) => (
+          <Card key={i} className="bg-gray-800 border-gray-700">
+            <CardContent className="p-6 text-center">
+              <feature.icon className="w-10 h-10 mx-auto mb-4 text-red-500" />
+              <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+              <p className="text-gray-400 text-sm">{feature.desc}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </section>
+
+      {/* Templates Showcase */}
+      <section id="templates" className="py-16 px-6 max-w-6xl mx-auto">
+        <h2 className="text-3xl font-bold text-center mb-10">Popular Templates</h2>
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="overflow-hidden bg-gray-800 border-gray-700">
+              <img
+                src={`https://placehold.co/600x340?text=Thumbnail+${i + 1}`}
+                alt={`Thumbnail ${i + 1}`}
+                className="w-full h-40 object-cover"
+              />
+              <CardContent className="p-4 flex justify-center">
+                <Button className="bg-red-400 hover:bg-red-700 w-full">Customize</Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section id="testimonials" className="py-16 px-6 bg-gray-900">
+        <h2 className="text-3xl font-bold text-center mb-10">What Creators Say</h2>
+        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          {["Boosted my CTR by 50%!", "Super easy to use.", "Best thumbnail maker ever!"].map(
+            (quote, i) => (
+              <Card key={i} className="bg-gray-800 border-gray-700">
+                <CardContent className="p-6 text-center text-gray-300">
+                  <p>“{quote}”</p>
+                </CardContent>
+              </Card>
+            )
+          )}
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-20 text-center px-6">
+        <h2 className="text-4xl font-bold mb-4">
+          Your next viral video starts with the perfect thumbnail.
+        </h2>
+        <Link href="/login">
+          <Button className="bg-red-400 hover:bg-red-700 text-lg px-6 py-3 mt-4">
+            Start Creating Free
+          </Button>
+        </Link>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-6 border-t border-gray-800 text-center text-gray-400 text-sm">
+        © 2025 Thumbnail Creator. All rights reserved.
       </footer>
     </div>
   );
