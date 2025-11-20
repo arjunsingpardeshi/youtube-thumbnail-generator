@@ -183,18 +183,18 @@ const ChatInterface = () => {
 
     try {
       const apiResponse = await callThumbnailAPI(currentPrompt, currentImages);
-
+      console.log("api response of generated thumbnail= ",apiResponse)
       // Update user message with final Cloudinary URLs if they weren't already set
-      if (apiResponse.uploadedImages.length > 0) {
+      if (apiResponse.thumbnail?.url > 0) {
         setMessages(prev =>
           prev.map(msg => {
             if (msg.id === newMessage.id) {
-              const updatedImages = apiResponse.uploadedImages.map((uploaded, idx) => ({
-                id: newMessage.id + '-uploaded-' + idx,
-                url: uploaded.url,
-                name: currentImages[idx]?.name || `image_${idx + 1}`,
-                isUploading: false
-              }));
+              const updatedImages = {
+              id: newMessage.id + '-generated-thumbnail',
+              url: apiResponse.thumbnail.url,
+              name: "Generated Thumbnail",
+              isUploading: false
+              };
               return { ...msg, images: updatedImages };
             }
             return msg;
@@ -207,7 +207,7 @@ const ChatInterface = () => {
         id: Date.now() + 1,
         type: 'ai',
         content: apiResponse.message || 'Thumbnail generated successfully!',
-        thumbnails: apiResponse.thumbnails || [],
+        thumbnails: apiResponse.thumbnail || [],
         timestamp: new Date(),
         generationId: apiResponse.generationId
       };
@@ -430,49 +430,59 @@ const ChatInterface = () => {
                           <div className="whitespace-pre-wrap text-gray-100 mb-3">{message.content}</div>
                         )}
 
-                        {/* Generated Thumbnails */}
-                        {message.thumbnails && message.thumbnails.length > 0 && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {message.thumbnails.map((thumbnail, index) =>
-                            thumbnail?.url ? (
-                              <div
-                                key={index}
-                                className="relative group bg-gray-700 rounded-lg overflow-hidden"
-                              >
-                                {/* Thumbnail image */}
-                                <img
-                                  src={thumbnail.url}
-                                  alt={`Thumbnail ${index + 1}`}
-                                  className="w-full h-32 object-cover"
-                                  onError={(e) => (e.currentTarget.src = "/placeholder.png")}
-                                />
+                      {/* Generated Thumbnails */}
+                      {(() => {
+                        // Normalize: convert single thumbnail → array
+                        const thumbs = message.thumbnails
+                          ? Array.isArray(message.thumbnails)
+                            ? message.thumbnails
+                            : [message.thumbnails]   // convert object → array
+                          : [];
 
-                                {/* Overlay with download button:
-                                    - bg-black/0 makes it transparent by default (Tailwind v3+ slash-alpha)
-                                    - group-hover:bg-black/50 fades to semi-black on hover
-                                    - pointer-events-none prevents the overlay from blocking clicks until hover
-                                    - z-index ensures the download button sits above everything */}
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center pointer-events-none group-hover:pointer-events-auto z-10">
-                                  <button
-                                    onClick={ () => downloadThumbnail(thumbnail.url, `thumbnail_${index + 1}.png`)}
-                                    className="z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex items-center space-x-2"
-                                  >
-                                    <Download size={16} />
-                                    <span>Download</span>
-                                  </button>
-                                </div>
+                        if (thumbs.length === 0) return null;
 
-                                {/* Optional label */}
-                                {thumbnail.variant && (
-                                  <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded z-20">
-                                    {thumbnail.variant}
+                        return (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {thumbs.map((thumbnail, index) =>
+                              thumbnail?.url ? (
+                                <div
+                                  key={thumbnail.public_id || index}
+                                  className="relative group bg-gray-700 rounded-lg overflow-hidden"
+                                >
+                                  {/* Thumbnail image */}
+                                  <img
+                                    src={thumbnail.url}
+                                    alt={`Thumbnail ${index + 1}`}
+                                    className="w-full h-32 object-cover"
+                                    onError={(e) => (e.currentTarget.src = "/placeholder.png")}
+                                  />
+
+                                  {/* Hover overlay */}
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center pointer-events-none group-hover:pointer-events-auto z-10">
+                                    <button
+                                      onClick={() =>
+                                        downloadThumbnail(thumbnail.url, `thumbnail_${index + 1}.png`)
+                                      }
+                                      className="z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg flex items-center space-x-2"
+                                    >
+                                      <Download size={16} />
+                                      <span>Download</span>
+                                    </button>
                                   </div>
-                                )}
-                              </div>
-                            ) : null
-                          )}
-                        </div>
-                      )}
+
+                                  {/* Optional label */}
+                                  {thumbnail.variant && (
+                                    <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded z-20">
+                                      {thumbnail.variant}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : null
+                            )}
+                          </div>
+                        );
+                      })()}
+
                         {/* Timestamp */}
                         <div className={`text-xs mt-2 ${
                           message.type === 'user' ? 'text-blue-200' : 'text-gray-400'

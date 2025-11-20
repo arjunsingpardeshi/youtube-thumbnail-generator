@@ -1,106 +1,155 @@
 import { NextRequest, NextResponse } from 'next/server';
+import axios from "axios";
 import cloudinary from '@/lib/cloudinary';
-import { ThumbnailGenerator } from '@/lib/thumbnail-generator';
 
-async function generateThumbnailWithAI(prompt, referenceImages) {
-  let thumbnails = [], response;
-  console.log(referenceImages)
-  if(referenceImages.length===0){
-       response = await ThumbnailGenerator.generateFromPrompt(prompt)
-    //  console.log("response for promt = ", response)
-  }else{
-       response = await ThumbnailGenerator.generateFromImageAndPrompt(referenceImages, prompt)
-     // console.log("response for image and prompt = ", response)
-  }
-  thumbnails.push(response.thumbnail)
-  const mockThumbnails = [
-    'https://fastly.picsum.photos/id/12/2500/1667.jpg?hmac=Pe3284luVre9ZqNzv1jMFpLihFI6lwq7TPgMSsNXw2w',
-    'https://fastly.picsum.photos/id/8/5000/3333.jpg?hmac=OeG5ufhPYQBd6Rx1TAldAuF92lhCzAhKQKttGfawWuA'
-  ];
-  
-  // Upload mock thumbnails to Cloudinary (in real scenario, you'd upload AI-generated images)
-  const uploadPromises = thumbnail.map(async (url, index) => {
-    return new Promise((resolve, reject) => {
-      cloudinary.uploader.upload(
-        url,
-        {
-          folder: 'ytthumbs/generated_thumbnails',
-          public_id: `generated_${Date.now()}_${index}`,
-          transformation: [
-            { width: 1280, height: 720, crop: 'fill' },
-            { quality: 'auto:good' }
-          ]
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-    });
-  });
-  
-  const results = await Promise.all(uploadPromises);
-  return results.map(result => ({
-    url: result.secure_url,
-    public_id: result.public_id,
-    variant: `Style ${results.indexOf(result) + 1}`
-  }));
+/* ------------------ FREEPIK CONSTANTS ------------------ */
+const CREATE_URL = "https://api.freepik.com/v1/ai/gemini-2-5-flash-image-preview";
+const STATUS_URL = "https://api.freepik.com/v1/ai/gemini-2-5-flash-image-preview/";
+
+const HEADERS = {
+  "x-freepik-api-key": process.env.FREEPIK_API_KEY,
+  "Content-Type": "application/json",
+};
+
+/* ---------------------------------------------------------
+   1) CREATE FREEPIK TASK
+--------------------------------------------------------- */
+async function createTask(prompt, referenceImages) {
+  const payload = {
+    prompt,
+    reference_images: referenceImages.map(img => img.url),
+    size: { width: 1280, height: 720 },
+  };
+
+  const res = await axios.post(CREATE_URL, payload, { headers: HEADERS });
+  return res.data?.data?.task_id ?? null;
 }
 
+/* ---------------------------------------------------------
+   2) EXTRACT CDN URL
+--------------------------------------------------------- */
+function extractImageUrl(data) {
+  const gen = data?.generated;
+
+  if (Array.isArray(gen)) {
+    if (typeof gen[0] === "string") return gen[0];
+    if (gen[0]?.url) return gen[0].url;
+  }
+
+  return null;
+}
+
+/* ---------------------------------------------------------
+   3) POLL UNTIL IMAGE IS READY
+--------------------------------------------------------- */
+async function pollTask(taskId, maxAttempts = 50, delayMs = 1500) {
+  let attempt = 0;
+
+  while (attempt < maxAttempts) {
+    attempt++;
+
+    try {
+      const res = await axios.get(STATUS_URL + taskId, { headers: HEADERS });
+      const data = res.data?.data;
+      const status = data?.status?.toUpperCase();
+
+      console.log(`Poll ${attempt} → ${status}`);
+
+      if (["COMPLETED", "SUCCESS", "SUCCESSFUL"].includes(status)) {
+        return extractImageUrl(data);
+      }
+
+      if (["FAILED", "ERROR"].includes(status)) {
+        console.error("Freepik Task Failed:", data);
+        return null;
+      }
+
+    } catch (err) {
+      if (err.response?.status === 404) return null;
+      console.error("Polling error:", err.message);
+    }
+
+    await new Promise(r => setTimeout(r, delayMs));
+  }
+
+  return null;
+}
+
+/* ---------------------------------------------------------
+   4) UPLOAD CDN URL TO CLOUDINARY
+--------------------------------------------------------- */
+async function uploadToCloudinary(url, index = 0) {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload(
+      url,
+      {
+        folder: "ytthumbs/generated_thumbnails",
+        public_id: `generated_${Date.now()}_${index}`,
+        transformation: [
+          { width: 1280, height: 720, crop: 'fit' },
+          { quality: 'auto:good' }
+        ]
+      },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve({
+          url: result.secure_url,
+          public_id: result.public_id,
+          variant: `Style ${index + 1}`,
+        });
+      }
+    );
+  });
+}
+
+/* ---------------------------------------------------------
+   5) MAIN API ROUTE (POST)
+--------------------------------------------------------- */
 export async function POST(request) {
   try {
     const formData = await request.formData();
-    const prompt = formData.get('prompt');
-    const imageUrls = formData.getAll('imageUrls');
-    let uploadedImages = [];
-    
-    if (imageUrls && imageUrls.length > 0) {
-      // const uploadPromises = imageFiles.map(async (file) => {
-      //   const bytes = await file.arrayBuffer();
-      //   const buffer = Buffer.from(bytes);
-        
-      //   return new Promise((resolve, reject) => {
-      //     cloudinary.uploader.upload_stream(
-      //       {
-      //         resource_type: 'image',
-      //         folder: 'ytthumbs/user_uploads',
-      //         transformation: [
-      //           { width: 1280, height: 780, crop: 'limit' },
-      //           { quality: 'auto:good' }
-      //         ]
-      //       },
-      //       (error, result) => {
-      //         if (error) reject(error);
-      //         else resolve(result);
-      //       }
-      //     ).end(buffer);
-      //   });
-      // });
-      
-      //const uploadResults = await Promise.all(uploadPromises);
-      uploadedImages = imageUrls.map((url, index) => ({
-        url,
-        public_id: `frontend_uploaded_${Date.now()}_${index}`,
-        width: null,   // you can add width/height if frontend sends it
-        height: null
-      }));
+    const prompt = formData.get("prompt");
+    const imageUrls = formData.getAll("imageUrls");
+
+    /* --- FIX: validate prompt --- */
+    if (!prompt || prompt.trim() === "") {
+      return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
     }
-    console.log("uploaded images = ", uploadedImages)
-    // Generate thumbnails using AI
-    const generatedThumbnails = await generateThumbnailWithAI(prompt, uploadedImages);
-    
+
+    const referenceImages = imageUrls.map((url, i) => ({
+      url,
+      public_id: `frontend_uploaded_${Date.now()}_${i}`
+    }));
+
+    /* ---- Create Freepik AI Task ---- */
+    const taskId = await createTask(prompt, referenceImages);
+    if (!taskId) {
+      return NextResponse.json({ error: "Freepik task creation failed" }, { status: 500 });
+    }
+
+    /* ---- Poll Until Freepik Finishes ---- */
+    const cdnUrl = await pollTask(taskId);
+    if (!cdnUrl) {
+      return NextResponse.json({ error: "Freepik generation failed" }, { status: 500 });
+    }
+
+    console.log("Generated Freepik CDN URL:", cdnUrl);
+
+    /* ---- Upload generated CDN URL to Cloudinary ---- */
+    const uploaded = await uploadToCloudinary(cdnUrl, 0);
+
     return NextResponse.json({
       success: true,
-      message: `Generated ${generatedThumbnails.length} thumbnails based on your prompt${uploadedImages.length > 0 ? ' and reference images' : ''}!`,
-      uploadedImages,
-      thumbnails: generatedThumbnails,
-      generationId: Date.now().toString()
+      thumbnail: uploaded,
+      freepik_url: cdnUrl,
+      message: "Thumbnail generated successfully!",
+      generationId: Date.now().toString(),
     });
-    
+
   } catch (error) {
-    console.error('Generation error:', error);
+    console.error("Generate Thumbnail Error:", error);
     return NextResponse.json(
-      { error: 'Thumbnail generation failed', details: error.message }, 
+      { error: "Thumbnail generation failed", details: error.message },
       { status: 500 }
     );
   }
