@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from "axios";
 import cloudinary from '@/lib/cloudinary';
+import { promptEnhanced } from '@/lib/redefinePrompt.js';
 
-/* ------------------ FREEPIK CONSTANTS ------------------ */
+//FREEPIK CONSTANTS 
 const CREATE_URL = "https://api.freepik.com/v1/ai/gemini-2-5-flash-image-preview";
 const STATUS_URL = "https://api.freepik.com/v1/ai/gemini-2-5-flash-image-preview/";
 
@@ -11,9 +12,7 @@ const HEADERS = {
   "Content-Type": "application/json",
 };
 
-/* ---------------------------------------------------------
-   1) CREATE FREEPIK TASK
---------------------------------------------------------- */
+// CREATE FREEPIK TASK
 async function createTask(prompt, referenceImages) {
   const payload = {
     prompt,
@@ -25,9 +24,7 @@ async function createTask(prompt, referenceImages) {
   return res.data?.data?.task_id ?? null;
 }
 
-/* ---------------------------------------------------------
-   2) EXTRACT CDN URL
---------------------------------------------------------- */
+// EXTRACT CDN URL
 function extractImageUrl(data) {
   const gen = data?.generated;
 
@@ -39,9 +36,8 @@ function extractImageUrl(data) {
   return null;
 }
 
-/* ---------------------------------------------------------
-   3) POLL UNTIL IMAGE IS READY
---------------------------------------------------------- */
+
+//POLL UNTIL IMAGE IS READY
 async function pollTask(taskId, maxAttempts = 50, delayMs = 1500) {
   let attempt = 0;
 
@@ -75,9 +71,8 @@ async function pollTask(taskId, maxAttempts = 50, delayMs = 1500) {
   return null;
 }
 
-/* ---------------------------------------------------------
-   4) UPLOAD CDN URL TO CLOUDINARY
---------------------------------------------------------- */
+
+// UPLOAD CDN URL TO CLOUDINARY
 async function uploadToCloudinary(url, index = 0) {
   return new Promise((resolve, reject) => {
     cloudinary.uploader.upload(
@@ -102,32 +97,37 @@ async function uploadToCloudinary(url, index = 0) {
   });
 }
 
-/* ---------------------------------------------------------
-   5) MAIN API ROUTE (POST)
---------------------------------------------------------- */
+
+//MAIN API ROUTE (POST)
 export async function POST(request) {
   try {
     const formData = await request.formData();
     const prompt = formData.get("prompt");
+    const promptStyle = formData.get("promptStyle")
     const imageUrls = formData.getAll("imageUrls");
 
-    /* --- FIX: validate prompt --- */
+    // FIX: validate prompt
     if (!prompt || prompt.trim() === "") {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
     }
-
+    
+    const newPrompt = await promptEnhanced(prompt, promptStyle)
+    console.log("prompt in backend api = ", prompt)
+    console.log("prompt style in backend api = ", promptStyle)
+    console.log("new prompt in backend api = ", newPrompt)
+    //return NextResponse.json({ promt: newPrompt,prompt, promptStyle }, { status: 200 })
     const referenceImages = imageUrls.map((url, i) => ({
       url,
       public_id: `frontend_uploaded_${Date.now()}_${i}`
     }));
 
-    /* ---- Create Freepik AI Task ---- */
-    const taskId = await createTask(prompt, referenceImages);
+   // Create Freepik AI Task
+    const taskId = await createTask(newPrompt, referenceImages);
     if (!taskId) {
       return NextResponse.json({ error: "Freepik task creation failed" }, { status: 500 });
     }
 
-    /* ---- Poll Until Freepik Finishes ---- */
+    // Poll Until Freepik Finishes
     const cdnUrl = await pollTask(taskId);
     if (!cdnUrl) {
       return NextResponse.json({ error: "Freepik generation failed" }, { status: 500 });
@@ -135,7 +135,7 @@ export async function POST(request) {
 
     console.log("Generated Freepik CDN URL:", cdnUrl);
 
-    /* ---- Upload generated CDN URL to Cloudinary ---- */
+    // Upload generated CDN URL to Cloudinary
     const uploaded = await uploadToCloudinary(cdnUrl, 0);
 
     return NextResponse.json({

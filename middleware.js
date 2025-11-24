@@ -1,52 +1,40 @@
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { jwtVerify } from "jose";
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const isPublicRoute = createRouteMatcher(["/sign-in", "/sign-up", "/"]);
+const isProtectedRoute = createRouteMatcher(["/dashboard"]);
 
-async function verifyToken(token) {
-  try {
-    const { payload } = await jwtVerify(
-      token,
-      new TextEncoder().encode(JWT_SECRET)
-    );
-    return payload;
-  } catch (err) {
-    return null;
-  }
-}
+export default clerkMiddleware(async (auth, req) => {
+  const { userId } = await auth();
 
-export async function middleware(req) {
-  const token = req.cookies.get("token")?.value;
-  const { pathname } = req.nextUrl;
+  console.log("Middleware:", req.url, "userId:", userId);
 
-  // If no token
-  if (!token) {
-    // Protect dashboard
-    if (pathname.startsWith("/dashboard")) {
-      return NextResponse.redirect(new URL("/login", req.url));
+  // 1️⃣ USER IS LOGGED IN
+  if (userId) {
+    if (isPublicRoute(req)) {
+      console.log(" Logged-in user accessing public route → redirect to /dashboard");
+      return NextResponse.redirect(new URL("/dashboard", req.url));
     }
+
+    // allow access to /dashboard
     return NextResponse.next();
   }
 
-  // If token exists
-  const decoded = await verifyToken(token);
+  // USER IS NOT LOGGED IN
+  if (!userId) {
+    if (isProtectedRoute(req)) {
+      console.log("Not logged in redirect to /sign-in");
+      return NextResponse.redirect(new URL("/sign-in", req.url));
+    }
 
-  if (!decoded) {
-    // Invalid token -> clear cookie + go to login
-    const res = NextResponse.redirect(new URL("/login", req.url));
-    res.cookies.delete("token");
-    return res;
+    // allow "/sign-in", "/sign-up", "/"
+    return NextResponse.next();
   }
+});
 
-  // Already logged in but trying to visit /login -> redirect to /dashboard
-  if (pathname === "/login") {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
-  }
-
-  return NextResponse.next();
-}
-
-// Protect both dashboard and login routes
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: [
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico)).*)",
+    "/(api|trpc)(.*)",
+  ],
 };

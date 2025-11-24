@@ -1,9 +1,17 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button.jsx";
+import { Card, CardContent } from "@/components/ui/card.jsx";
 import { Play, Star, Sparkles, Download } from "lucide-react";
 
 export default function HomePage() {
+  const templates = [
+            "https://res.cloudinary.com/dxgikcsnn/image/upload/v1763975919/thumbnail_1_raiovj.png",
+            "https://res.cloudinary.com/dxgikcsnn/image/upload/v1763975916/thumbnail_2_ajctbh.png",
+            "https://res.cloudinary.com/dxgikcsnn/image/upload/v1763975915/thumbnail_3_owiy1g.png",
+            "https://res.cloudinary.com/dxgikcsnn/image/upload/v1763975916/thumbnail_4_wyyeod.png",
+            "https://res.cloudinary.com/dxgikcsnn/image/upload/v1763975918/thumbnail_5_ogywtk.png",
+            "https://res.cloudinary.com/dxgikcsnn/image/upload/v1763975920/thumbnail_6_lpugje.png",
+          ]
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-900 to-black text-white">
       {/* Navbar */}
@@ -18,10 +26,10 @@ export default function HomePage() {
           <a href="#pricing" className="hover:text-white">Pricing</a>
         </nav>
         <div className="flex gap-3">
-          <Link href="/login">
+          <Link href="/sign-in">
             <Button variant="outline" className="border-white text-white">Login</Button>
           </Link>
-          <Link href="/login">
+          <Link href="/sign-up">
             <Button className="bg-red-400 hover:bg-red-700">Sign Up</Button>
           </Link>
         </div>
@@ -36,14 +44,17 @@ export default function HomePage() {
           No design skills needed. Pick a template, customize, and download instantly.
         </p>
         <div className="flex gap-4">
-          <Link href="/login">
+          <Link href="/sign-up">
             <Button className="bg-red-400 hover:bg-red-700 text-lg px-6 py-3">
               Start Creating
             </Button>
           </Link>
-          <Button variant="outline" className="border-white text-white text-lg px-6 py-3">
-            Try Demo
-          </Button>
+          <Link href="/sign-up">
+            <Button variant="outline" className="border-white text-white text-lg px-6 py-3">
+              Try Demo
+            </Button>
+           </Link>
+
         </div>
       </section>
 
@@ -68,17 +79,26 @@ export default function HomePage() {
       {/* Templates Showcase */}
       <section id="templates" className="py-16 px-6 max-w-6xl mx-auto">
         <h2 className="text-3xl font-bold text-center mb-10">Popular Templates</h2>
+
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="overflow-hidden bg-gray-800 border-gray-700">
-              <img
-                src={`https://placehold.co/600x340?text=Thumbnail+${i + 1}`}
-                alt={`Thumbnail ${i + 1}`}
-                className="w-full h-40 object-cover"
-              />
+          {templates.map((src, i) => (
+            <Card key={i} className="bg-gray-800 border-gray-700 overflow-hidden w-full">
+              
+              {/* FIXED IMAGE BOX — NO CROPPING */}
+              <div className="w-full h-48 bg-black flex items-center justify-center">
+                <img
+                  src={src}
+                  alt={`Thumbnail ${i + 1}`}
+                  className="max-w-full max-h-full object-contain"
+                />
+              </div>
+
               <CardContent className="p-4 flex justify-center">
-                <Button className="bg-red-400 hover:bg-red-700 w-full">Customize</Button>
+                <Button className="bg-red-400 hover:bg-red-700 w-full">
+                  Customize
+                </Button>
               </CardContent>
+
             </Card>
           ))}
         </div>
@@ -105,7 +125,7 @@ export default function HomePage() {
         <h2 className="text-4xl font-bold mb-4">
           Your next viral video starts with the perfect thumbnail.
         </h2>
-        <Link href="/login">
+        <Link href="/sign-up">
           <Button className="bg-red-400 hover:bg-red-700 text-lg px-6 py-3 mt-4">
             Start Creating Free
           </Button>
