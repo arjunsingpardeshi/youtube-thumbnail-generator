@@ -509,9 +509,7 @@ const ChatInterface = () => {
                   Create Amazing YouTube Thumbnails
                 </h2>
                 <p className="text-gray-400 mb-8">
-                  Describe your video content and I'll generate eye-catching thumbnails for you!
-                </p>
-                
+                    {"Describe your video content and I'll generate eye-catching thumbnails for you!"}                </p>  
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                   <div 
                     className="p-4 rounded-lg bg-gray-800 hover:bg-gray-750 transition-colors cursor-pointer"
